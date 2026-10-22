@@ -42,6 +42,12 @@ MatErreur mat_allouer(Matrice *res, int nb_lignes, int nb_colonnes)
 
 
     /* FOURNI : tableau des nb_lignes pointeurs de lignes (tous à NULL). */
+    if(nb_lignes < 1 || nb_lignes > MAT_DIM_MAX){
+        return MAT_ERR_ARGUMENT;
+    }
+    if(nb_colonnes < 1 || nb_colonnes > MAT_DIM_MAX){
+        return MAT_ERR_ARGUMENT;
+    }
     int **coef = mat_calloc((size_t)nb_lignes, sizeof *coef);
     if (coef == NULL)
         return MAT_ERR_ALLOCATION;

@@ -1,3 +1,5 @@
 # Fichiers compilés
 *.o
 *.exe
+*.txt
+*.pdf
