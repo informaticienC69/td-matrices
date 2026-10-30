@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         goto nettoyage;
 
     /* (4.d) À COMPLÉTER : tout a réussi :
-     *         - afficher "Résultat enregistré dans \"...\"." ;
+     *         - afficher "Résultat enregistré dans \"...\".\" ;
      *         - statut = EXIT_SUCCESS;                                 */
 
 
