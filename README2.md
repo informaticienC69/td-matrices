@@ -85,7 +85,89 @@ gcc -std=c11 -Wall -Wextra -Wpedantic -g -DMAT_TEST_ALLOC \
 
 ## Exercice 2 — Entrées-sorties
 
-> *À compléter.*
+### Étapes réalisées
+
+| Étape | Fichier | Description | Statut |
+|---|---|---|---|
+| 2.a | `matrice_io.c` | Afficher les coefficients avec `printf(" %8d", ...)` | ✅ |
+| 2.b | `matrice_io.c` | Écriture au format canonique avec vérification des retours | ✅ |
+| 2.c | `matrice_io.c` | Vérification des dimensions lues (`1` à `MAT_DIM_MAX`) | ✅ |
+| 2.d | `matrice_io.c` | Réservation d'une matrice locale `tmp` | ✅ |
+| 2.e | `matrice_io.c` | Lecture des coefficients via `lire_entier` et libération si échec | ✅ |
+| 2.f | `matrice_io.c` | Transfert du résultat (`*res = tmp;`) et retour `MAT_OK` | ✅ |
+
+### Résultat des tests
+
+```
+=== Exercice 2 : affichage (verification visuelle) ===
+M (4 x 3) :
+        1        2        3
+        4        5        6
+        7        8        9
+       10       11       12
+=== Exercice 2 : ecriture ===
+[OK]    ouverture de test_ex2_sortie.txt en ecriture
+[OK]    (2.b) mat_ecrire renvoie MAT_OK
+[OK]    (2.b) le fichier contient exactement le format attendu
+[OK]    (2.b) mat_ecrire refuse une matrice vide
+=== Exercice 2 : relecture ===
+[OK]    (2.f) mat_lire relit le fichier : MAT_OK
+[OK]    (2.e) la matrice relue est identique
+[OK]    (2.e) espaces et sauts de ligne en trop sont toleres
+=== Exercice 2 : fichiers incorrects ===
+[OK]    (2.c) fichier vide
+[OK]    (2.c) dimension nulle
+[OK]    (2.c) dimension negative
+[OK]    (2.e) coefficient manquant
+[OK]    (2.e) donnee non numerique
+[OK]    (2.e) entier trop grand pour un int
+=== Exercice 2 : echec d'allocation simule ===
+[OK]    (2.d) mat_lire renvoie MAT_ERR_ALLOCATION proprement
+
+Bilan : 14 / 14 vérifications réussies.
+```
+
+---
+
+### Questions de réflexion — Exercice 2
+
+**Q4.1** Pourquoi `mat_lire` remplit-elle d'abord une matrice locale avant de l'affecter à `*res` ?
+
+> Pour respecter strictement la règle R3 de gestion de la mémoire : si la lecture échoue en cours de route (fichier mal formé, dimensions erronées, fichier tronqué, données non numériques), `mat_detruire(&tmp)` libère toute la mémoire déjà allouée et `*res` reste intact à l'état `MATRICE_VIDE`. L'affectation `*res = tmp;` n'a lieu que lorsque l'ensemble des coefficients a été lu avec succès.
+
+---
+
+**Q4.2** La lecture vérifie-t-elle que chaque ligne de la matrice est sur sa propre ligne de texte ? Est-ce gênant ? Justifiez le principe « tolérant en lecture, strict en écriture ».
+
+> Non, la lecture ne le vérifie pas car `lire_entier` utilise `fscanf` avec `%s` puis `strtol`, ce qui traite de manière équivalente tous les caractères d'espacement (espaces, tabulations, retours à la ligne `\n`). 
+> Ce n'est pas gênant car le nombre exact de coefficients attendus est strictement contrôlé ($n \times p$).
+> Le principe « tolérant en lecture, strict en écriture » (loi de Postel / Robustness Principle) permet d'accepter des fichiers générés par d'autres logiciels, éditeurs ou systèmes d'exploitation (variations de retours chariot, espaces superflus), tout en garantissant que nos propres sorties sont rigoureusement canoniques, propres et universellement lisibles.
+
+---
+
+**Q4.3** Après l'appel `mat_lire(f, &m)`, le flux `f` est positionné après le dernier coefficient. Comment exploiter cette propriété pour stocker deux matrices dans un même fichier ?
+
+> Comme `mat_lire` ne ferme pas le flux (règle R7) et s'arrête exactement après avoir lu les $n \times p$ coefficients, le curseur du fichier reste positionné juste au début des données suivantes. On peut donc enchaîner directement `mat_lire(f, &m1)` puis `mat_lire(f, &m2)` sur le même flux sans devoir calculer d'offset ni appeler `fseek`. De même en écriture, on appelle successivement `mat_ecrire(f, &m1)` puis `mat_ecrire(f, &m2)`.
+
+---
+
+**Q4.4** Pourquoi `mat_ecrire` appelle-t-elle `fflush` avant de renvoyer `MAT_OK` ? Cela dispense-t-il l'appelant de tester `fclose` ?
+
+> `fflush(f)` force l'écriture immédiate des données présentes dans le tampon de la bibliothèque standard vers le système d'exploitation. Cela permet à `mat_ecrire` d'intercepter une erreur d'écriture (par exemple disque saturé ou canal interrompu) et de renvoyer `MAT_ERR_ECRITURE`.
+> Cependant, cela ne dispense pas l'appelant de tester la valeur de retour de `fclose(f)`, car `fclose` finalise la clôture du fichier au niveau du système d'exploitation (libération du descripteur de fichier) et peut lui-même échouer.
+
+---
+
+### Critères de validation — Exercice 2
+
+- [x] `test_ex2` compile sans aucun avertissement.
+- [x] `./test_ex2` affiche `Bilan : 14 / 14`.
+- [x] `valgrind --leak-check=full ./test_ex2` affiche `All heap blocks were freed` — **51 allocs, 51 frees, 0 erreur**.
+
+**Capture valgrind :**
+
+![Résultat valgrind exercice 2](valgrind_ex2.png)
+- [x] Aucune fonction de `matrice_io.c` n'appelle `fopen` ni `fclose`, et il ne reste aucune ligne provisoire.
 
 ---
 

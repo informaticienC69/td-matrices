@@ -1,5 +1,13 @@
 # Fichiers compilés
 *.o
 *.exe
-*.txt
-*.pdf
+test_ex1
+test_ex2
+test_ex3
+demo_matrices
+
+# Fichiers temporaires de test
+test_ex2_sortie.txt
+R.txt
+R2.txt
+resultat_add.txt
