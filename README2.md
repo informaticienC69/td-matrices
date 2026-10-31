@@ -173,7 +173,88 @@ Bilan : 14 / 14 vérifications réussies.
 
 ## Exercice 3 — Calcul matriciel
 
-> *À compléter.*
+### Étapes réalisées
+
+| Étape | Fichier | Description | Statut |
+|---|---|---|---|
+| 3.a | `matrice_calcul.c` | Addition : contrôle des dimensions identiques ($n \times p$) | ✅ |
+| 3.b | `matrice_calcul.c` | Addition : réservation de la matrice résultat | ✅ |
+| 3.c | `matrice_calcul.c` | Addition : calcul en `long long` avec détection de débordement | ✅ |
+| 3.d | `matrice_calcul.c` | Addition : transfert du résultat (`*res = r; return MAT_OK;`) | ✅ |
+| 3.e | `matrice_calcul.c` | Multiplication : contrôle des dimensions ($cols(a) == rows(b)$) | ✅ |
+| 3.f | `matrice_calcul.c` | Multiplication : réservation du résultat ($rows(a) \times cols(b)$) | ✅ |
+| 3.g | `matrice_calcul.c` | Multiplication : somme des produits avec contrôle de débordement | ✅ |
+| 3.h | `matrice_calcul.c` | Multiplication : transfert du résultat (`*res = r; return MAT_OK;`) | ✅ |
+
+### Résultat des tests
+
+```
+=== Exercice 3 : addition ===
+[OK]    (3.a) (2 x 3) + (3 x 2) : MAT_ERR_DIMENSIONS
+[OK]    (3.d) (2 x 3) + (2 x 3) : MAT_OK
+[OK]    (3.c) a + b est correct
+[OK]    a et b n'ont pas ete modifiees
+[OK]    (3.b) le resultat possede sa propre memoire
+[OK]    (3.c) INT_MAX + 1 : MAT_ERR_DEPASSEMENT
+=== Exercice 3 : multiplication ===
+[OK]    (3.e) (2 x 3) x (2 x 3) : MAT_ERR_DIMENSIONS
+[OK]    (3.h) (2 x 3) x (3 x 2) : MAT_OK
+[OK]    (3.g) a x c = (58 64 / 139 154)
+[OK]    (3.f) (3 x 2) x (2 x 3) donne une matrice 3 x 3
+[OK]    a et c n'ont pas ete modifiees
+[OK]    (3.g) 2 x 10^10 depasse INT_MAX : MAT_ERR_DEPASSEMENT
+=== Exercice 3 : cas particuliers ===
+[OK]    resultat = entree refuse, a reste intacte
+[OK]    (3.f) echec d'allocation : MAT_ERR_ALLOCATION, r vide
+
+Bilan : 14 / 14 vérifications réussies.
+```
+
+---
+
+### Questions de réflexion — Exercice 3
+
+**Q5.1** Le paramètre `const Matrice *a` empêche-t-il d'écrire `a->coef[0][0] = 7;` ? Que protège exactement ce `const` ? Que faudrait-il changer pour que le compilateur refuse cette affectation ?
+
+> Non, `const Matrice *a` n'empêche pas d'écrire `a->coef[0][0] = 7;`. Ce `const` protège uniquement les membres directs de la structure `Matrice` pointée par `a` (interdisant par exemple d'écrire `a->nb_lignes = 5` ou `a->coef = NULL`). En revanche, il ne protège pas les données situées derrière les pointeurs sur le tas car le type de `coef` est `int **` (pointeur vers pointeur vers int non-const).
+> Pour que le compilateur refuse toute modification des coefficients, il faudrait déclarer les coefficients en `const int * const *coef;`.
+
+---
+
+**Q5.2** Pourquoi refuse-t-on l'appel `mat_additionner(&a, &b, &a)` alors que, mathématiquement, *a ← a+b* a un sens ? Que se passerait-il avec notre implémentation si on l'acceptait ?
+
+> On refuse cet appel pour éviter l'aliasing et respecter les règles de gestion mémoire (R3 et R5). Dans notre architecture, la fonction commence par initialiser la sortie avec `*res = MATRICE_VIDE;`. Si `res` et `a` pointaient vers la même structure, écraser `*res` détruirait immédiatement les références vers les coefficients de `a` avant même le début du calcul. Cela provoquerait une fuite de la mémoire originale de `a`, suivie d'un déréférencement de pointeur nul (`NULL`) provoquant un plantage (`Segmentation Fault`).
+> Pour faire mathématiquement $a \leftarrow a + b$, l'utilisateur doit allouer une matrice temporaire `res`, détruire l'ancienne `a` avec `mat_detruire(&a)`, puis affecter `a = res`.
+
+---
+
+**Q5.3** Combien de multiplications d'entiers effectue `mat_multiplier` pour des matrices *n×p* et *p×q* ? Combien pour deux matrices *1000×1000* ?
+
+> Pour une matrice $A$ de dimensions $n \times p$ et $B$ de dimensions $p \times q$, la matrice résultat comporte $n \times q$ coefficients. Le calcul de chaque coefficient requiert $p$ multiplications élémentaires. Le nombre total de multiplications est donc :
+> $$N = n \times p \times q$$
+> Pour deux matrices carrées $1000 \times 1000$ ($n = p = q = 1000$) :
+> $$N = 1000 \times 1000 \times 1000 = 10^9 \text{ (1 milliard d'opérations)}.$$
+
+---
+
+**Q5.4** Pourquoi ne suffit-il pas de calculer `int s = a + b;` puis de tester `s < a` pour détecter un dépassement ?
+
+> 1. En norme C, le débordement arithmétique sur les entiers signés (`int`) est un **comportement indéfini** (*Undefined Behavior*). Le compilateur a légalement le droit de supposer qu'un tel débordement n'arrive jamais et d'éliminer le test `s < a` lors des optimisations (`-O2` / `-O3`).
+> 2. Si l'opérande $b$ est négatif, la relation $a + b < a$ est toujours vraie, produisant ainsi un faux positif.
+> La méthode robuste consiste donc à effectuer le calcul dans un type de plus grande capacité (`long long`) ou à vérifier les bornes *avant* l'opération.
+
+---
+
+### Critères de validation — Exercice 3
+
+- [x] `test_ex3` compile sans aucun avertissement avec `-std=c11 -Wall -Wextra -Wpedantic`.
+- [x] `./test_ex3` affiche `Bilan : 14 / 14`.
+- [x] `valgrind --leak-check=full ./test_ex3` affiche `All heap blocks were freed` — **37 allocs, 37 frees, 0 erreur**.
+
+**Capture valgrind :**
+
+![Résultat valgrind exercice 3](valgrind_ex3.jpg)
+- [x] Il ne reste aucune ligne provisoire dans `matrice_calcul.c`.
 
 ---
 
