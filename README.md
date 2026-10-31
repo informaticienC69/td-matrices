@@ -329,6 +329,6 @@ Résultats complets des tests locaux et **valgrind sous Linux** :
 - [x] `main.c` n'inclut que des en-têtes ; aucun module ne contient de fonction `main`.
 - [x] Les dix scénarios donnent le comportement attendu.
 - [x] Le fichier produit par le scénario 1 peut être relu : `./demo_matrices add R.txt R.txt R2.txt`.
-- [ ] `valgrind` ne signale ni fuite ni accès invalide dans aucun scénario.
+- [x] `valgrind` ne signale ni fuite ni accès invalide dans aucun scénario.
 - [x] Les trois programmes `test_ex1`, `test_ex2`, `test_ex3` affichent toujours un bilan complet.
 
